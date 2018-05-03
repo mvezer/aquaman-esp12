@@ -1,7 +1,7 @@
 
 #include <ESP8266HTTPClient.h>
-
 #include "time_manager.hpp"
+#include "lcd.hpp"
 
 HTTPClient http;
 const char* TZDB_API_URL = "http://api.timezonedb.com/v2/get-time-zone?key=SLHAXNXKNIPX&format=json&by=zone&zone=Europe/Berlin";
@@ -14,7 +14,7 @@ int ts_parse_response(String json) {
 
     if (json == NULL) {
         Serial.println("ERROR: invalid response");
-        return NULL;
+        return -1;
     }
 
     tsPos = json.indexOf("\"timestamp\"");
@@ -27,7 +27,7 @@ int ts_parse_response(String json) {
 
     Serial.println("ERROR: no timestamp found in response");
 
-    return NULL;
+    return 0;
 }
 
 int tm_sync() {
@@ -46,10 +46,11 @@ int tm_sync() {
         sys_timestamp = millis() / 1000;
 
         Serial.printf("Sync timestamp: %d, System timestamp: %d", sync_timestamp, sys_timestamp);
+        // lcd_print(0, 0, "timestamp:",1);
         return 1;
     }
 
     http.end();
     Serial.printf("ERROR: cannot get time, http response code is: %d", httpCode);
-    return NULL;
+    return 0;
 }
