@@ -2,9 +2,15 @@
 #include <ESP8266WiFi.h>
 #include "time_manager.hpp"
 #include "lcd.hpp"
+#include "Task.h"
 
 const char* SSID     = "WILLY.TEL-3KLO71Q7";
 const char* PASSWORD = "21211214932962960528";
+
+TaskManager taskManager;
+
+FunctionTask task_tm_tick(tm_tick, MsToTaskTime(1000));
+FunctionTask task_tm_sync(tm_sync, MsToTaskTime(1000 * 60 * 30));
 
 void connectWiFi() {
   Serial.println();
@@ -35,11 +41,14 @@ void setup() {
   delay(10);
   lcd_init();
   connectWiFi();
-  tm_sync();
+  tm_sync(0);
+  taskManager.StartTask(&task_tm_sync);
+  taskManager.StartTask(&task_tm_tick);
   // pinMode(2, OUTPUT);     // Initialize GPIO2 pin as an output
 }
 
 void loop() {
+  taskManager.Loop();
   // digitalWrite(2, LOW);   // Turn the LED on by making the voltage LOW
   // delay(250);            // Wait for a second
   // digitalWrite(2, HIGH);  // Turn the LED off by making the voltage HIGH
