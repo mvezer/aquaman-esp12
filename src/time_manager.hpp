@@ -7,5 +7,6 @@ void tm_tick(uint32_t deltaTime);
 void tm_date_str(char * str);
 void tm_time_str(char * str);
 void tm_display();
+unsigned long tm_day_timestamp();
 
 #endif

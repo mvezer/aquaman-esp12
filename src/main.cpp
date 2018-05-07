@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include "time_manager.hpp"
+#include "scheduler.hpp"
 #include "lcd.hpp"
 #include "Task.h"
 
@@ -11,6 +12,7 @@ TaskManager taskManager;
 
 FunctionTask task_tm_tick(tm_tick, MsToTaskTime(1000));
 FunctionTask task_tm_sync(tm_sync, MsToTaskTime(1000 * 60 * 30));
+FunctionTask task_sch_update(sch_update, MsToTaskTime(1000 * 5));
 
 void connectWiFi() {
   Serial.println();
@@ -42,8 +44,11 @@ void setup() {
   lcd_init();
   connectWiFi();
   tm_sync(0);
+  sch_init();
+  sch_update(0);
   taskManager.StartTask(&task_tm_sync);
   taskManager.StartTask(&task_tm_tick);
+  taskManager.StartTask(&task_sch_update);
   // pinMode(2, OUTPUT);     // Initialize GPIO2 pin as an output
 }
 

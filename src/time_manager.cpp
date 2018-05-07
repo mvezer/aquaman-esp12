@@ -7,11 +7,12 @@
 
 const int SECONDS_DAY = 24 * 60 * 60;
 
+unsigned long timestamp;
+
 HTTPClient http;
 const char* TZDB_API_URL = "http://api.timezonedb.com/v2/get-time-zone?key=SLHAXNXKNIPX&format=json&by=zone&zone=Europe/Berlin";
 
 unsigned long sync_timestamp = 0;
-unsigned long timestamp = 0;
 unsigned long timestamp_base = 0;
 
 int ts_parse_response(String json) {
@@ -55,10 +56,11 @@ void tm_sync(uint32_t deltaTime) {
         tm_date_str(time_str);
         Serial.printf("Current time: %s\n", time_str);
         // lcd_print(0, 0, "timestamp:",1);
+    } else {
+        Serial.printf("ERROR: cannot get time, http response code is: %d", httpCode);
     }
 
     http.end();
-    Serial.printf("ERROR: cannot get time, http response code is: %d", httpCode);
 }
 
 void tm_tick(uint32_t deltaTime) {
@@ -66,7 +68,6 @@ void tm_tick(uint32_t deltaTime) {
         timestamp = sync_timestamp + millis() / 1000 - timestamp_base;
         tm_display();
     }
-    Serial.printf("tick...\n");
 }
 
 void tm_date_str(char * str) {
@@ -88,4 +89,8 @@ void tm_display() {
     tm_time_str(time_str);
     lcd_print(0, 0, date_str, 1);
     lcd_print(0, 1, time_str, 0);
+}
+
+unsigned long tm_day_timestamp() {
+    return timestamp % SECONDS_DAY;
 }
