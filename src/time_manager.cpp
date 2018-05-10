@@ -66,7 +66,7 @@ void tm_sync(uint32_t deltaTime) {
 void tm_tick(uint32_t deltaTime) {
     if (sync_timestamp) {
         timestamp = sync_timestamp + millis() / 1000 - timestamp_base;
-        tm_display();
+        // tm_display();
     }
 }
 
@@ -87,10 +87,14 @@ void tm_display() {
     char time_str[32];
     tm_date_str(date_str);
     tm_time_str(time_str);
-    lcd_print(0, 0, date_str, 1);
+    lcd_print(0, 0, date_str, 0);
     lcd_print(0, 1, time_str, 0);
 }
 
 unsigned long tm_day_timestamp() {
     return timestamp % SECONDS_DAY;
+}
+
+unsigned long tm_timestamp() {
+    return timestamp;
 }

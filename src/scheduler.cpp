@@ -1,13 +1,19 @@
 #include "scheduler.hpp"
 #include <Arduino.h>
 #include "time_manager.hpp"
+#include "lcd.hpp"
 
 int light_state = -1;
 int co2_state = -1;
 int filter_state = -1;
 
-int is_feeding = 0;
 int is_maintenance = 0;
+unsigned long maintenance_ts = 0;
+const unsigned long MAINTENANCE_TIMEOUT = 60 * 60 * 2;
+
+int is_feeding = 0;
+unsigned long feeding_ts = 0;
+const unsigned long FEEDING_TIMEOUT = 60 * 15;
 
 const int LIGHT_GPIO = 4;
 const int CO2_GPIO = 5;
@@ -60,8 +66,59 @@ void sch_update_pin(int gpio, int state) {
     Serial.printf("   pin %d is set to %d\n", gpio, state);
 }
 
+void sch_toggle_feeding() {
+    if (is_maintenance) {
+        return;
+    }
+    if (is_feeding) {
+        is_feeding = 0;
+        lcd_print(0,0, " ", 1);
+    } else {
+        is_feeding = 1;
+        lcd_print(0,0, " -=* FEEDING *=-", 1);
+        feeding_ts = tm_timestamp();
+    }
+}
+
+void sch_toggle_maintenance() {
+    if (is_feeding) {
+        return;
+    }
+    if (is_maintenance) {
+        is_maintenance = 0;
+    } else {
+        is_maintenance = 1;
+        maintenance_ts = tm_timestamp();
+    }
+}
+
+void sch_update_maintenance() {
+
+}
+
+void sch_update_feeding() {
+    int elapsed_seconds = tm_timestamp() - feeding_ts;
+    int remaining_seconds = FEEDING_TIMEOUT - elapsed_seconds;
+
+    if (remaining_seconds <= 0) {
+        sch_toggle_feeding();
+    }
+    
+    const int remaining_hours = remaining_seconds / (60 * 60);
+    const int remaining_min = (remaining_seconds - remaining_hours * 60 * 60) / 60;
+    const int remaining_sec = remaining_seconds % 60;
+    char remaining_str[32];
+    sprintf(remaining_str, "%02d:%02d:%02d", remaining_hours, remaining_min, remaining_sec);
+    lcd_print(0, 1, remaining_str, 0);
+}
+
 void sch_update(uint32_t deltaTime) {
-    if (is_feeding || is_maintenance) {
+    if (is_feeding) {
+        sch_update_feeding();
+        return;
+    }
+    if (is_maintenance) {
+        sch_update_maintenance();
         return;
     }
     unsigned long timestamp = tm_day_timestamp();
@@ -113,13 +170,16 @@ void sch_update(uint32_t deltaTime) {
         sch_update_pin(FILTER_GPIO, new_filter_state);
         filter_state = new_filter_state;
     }
-    
+
+    tm_display();
+    /*
     char date_str[32];
     tm_time_str(date_str);
     Serial.println(" ");
     Serial.printf("[%s] light state: %d\n", date_str, light_state);
     Serial.printf("[%s] CO2 state: %d\n", date_str, co2_state);
     Serial.printf("[%s] filter state: %d\n", date_str, filter_state);
+    */
 }
 
 
