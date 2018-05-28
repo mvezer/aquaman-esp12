@@ -205,13 +205,19 @@ void sch_update(uint32_t deltaTime) {
 }
 
 void sch_update_display(unsigned long ts) {
+    if (!is_maintenance && !is_feeding) {
+        char date_str[32];
+        tm_date_str(tm_timestamp(), date_str);
+        lcd_print(0, 0, date_str, 0);
+    }
+
     char remaining_str[32];
     tm_time_str(ts, remaining_str);
     lcd_print(0, 1, remaining_str, 0);
 
     char active_channels[32];
     sprintf(active_channels, "[%c%c%c]", filter_state ? 'F' : ' ', light_state ? 'L' : ' ', co2_state ? 'C' : ' ');
-    lcd_print(10, 1, active_channels, 0);
+    lcd_print(11, 1, active_channels, 0);
 }
 
 
