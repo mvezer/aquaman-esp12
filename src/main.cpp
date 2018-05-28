@@ -12,14 +12,16 @@ const char* PASSWORD = "21211214932962960528";
 TaskManager taskManager;
 
 #define FEEDING_BUTTON_PIN 2
-int feeding_state = 0;
+#define MAINTENANCE_BUTTON_PIN 14
 
 void handle_feeding_button(ButtonState state);
+void handle_maintenance_button(ButtonState state);
 
 FunctionTask task_tm_tick(tm_tick, MsToTaskTime(1000));
 FunctionTask task_tm_sync(tm_sync, MsToTaskTime(1000 * 60 * 30));
 FunctionTask task_sch_update(sch_update, MsToTaskTime(1000));
 ButtonTask task_feeding_button(handle_feeding_button, FEEDING_BUTTON_PIN);
+ButtonTask task_maintenance_button(handle_maintenance_button, MAINTENANCE_BUTTON_PIN);
 
 void connectWiFi() {
   Serial.println();
@@ -52,24 +54,27 @@ void setup() {
   connectWiFi();
   tm_sync(0);
   sch_init();
+  lcd_print(0, 0, " ", 1);
   sch_update(0);
   taskManager.StartTask(&task_tm_sync);
   taskManager.StartTask(&task_tm_tick);
   taskManager.StartTask(&task_sch_update);
   taskManager.StartTask(&task_feeding_button);
-  // pinMode(2, OUTPUT);     // Initialize GPIO2 pin as an output
+  taskManager.StartTask(&task_maintenance_button);
 }
 
 void loop() {
   taskManager.Loop();
-  // digitalWrite(2, LOW);   // Turn the LED on by making the voltage LOW
-  // delay(250);            // Wait for a second
-  // digitalWrite(2, HIGH);  // Turn the LED off by making the voltage HIGH
-  // delay(500);            // Wait for two seconds
 }
 
 void handle_feeding_button(ButtonState state) {
   if (state == ButtonState_Pressed) {
     sch_toggle_feeding();
+  }
+}
+
+void handle_maintenance_button(ButtonState state) {
+  if (state == ButtonState_Pressed) {
+    sch_toggle_maintenance();
   }
 }

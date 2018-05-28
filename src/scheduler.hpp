@@ -18,5 +18,6 @@ struct schedule_item {
 void sch_init();
 void sch_update(uint32_t deltaTime);
 void sch_toggle_feeding();
+void sch_toggle_maintenance();
 
 #endif

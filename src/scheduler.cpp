@@ -15,22 +15,23 @@ int is_feeding = 0;
 unsigned long feeding_ts = 0;
 const unsigned long FEEDING_TIMEOUT = 60 * 15;
 
-const int LIGHT_GPIO = 4;
-const int CO2_GPIO = 5;
-const int FILTER_GPIO = 6;
+const int LIGHT_GPIO = 16;
+const int CO2_GPIO = 12;
+const int FILTER_GPIO = 0;
 
 const unsigned long HOURS_SEC = 60*60;
 const unsigned long MINUTES_SEC = 60;
 
-const unsigned long LIGTH_LENGTH = 4;
+const unsigned long LIGTH_LENGTH = 2
+;
 const unsigned long CO2_LENGTH = 2;
 const unsigned long FILTER_LENGTH = 1;
 
+void sch_update_pin(int gpio, int state);
+
 schedule_item light[LIGTH_LENGTH] = {
-    { { 21, 03, 0 }, 0, 1 },
-    { { 21, 03, 15 }, 0, 0 },
-    { { 21, 03, 30 }, 0, 1 },
-    { { 21, 03, 45 }, 0, 0 }
+    { { 7, 0, 0 }, 0, 1 },
+    { { 22, 0, 0 }, 0, 0 }
 };
 
 schedule_item co2[2] = {
@@ -49,6 +50,13 @@ unsigned long sch_create_timestamp(time_item t) {
 void sch_init() {
     int i = 0;
 
+    pinMode(LIGHT_GPIO, OUTPUT);
+    sch_update_pin(LIGHT_GPIO, 0);
+    pinMode(CO2_GPIO, OUTPUT);
+    sch_update_pin(CO2_GPIO, 0);
+    pinMode(FILTER_GPIO, OUTPUT);
+    sch_update_pin(FILTER_GPIO, 0);
+
     for (i = 0; i < LIGTH_LENGTH; i ++) {
         light[i].ts = sch_create_timestamp(light[i].t);
     }
@@ -64,6 +72,11 @@ void sch_init() {
 
 void sch_update_pin(int gpio, int state) {
     Serial.printf("   pin %d is set to %d\n", gpio, state);
+    if (state) {
+        digitalWrite(gpio, LOW);
+    } else {
+        digitalWrite(gpio, HIGH);
+    }
 }
 
 void sch_toggle_feeding() {
@@ -71,12 +84,19 @@ void sch_toggle_feeding() {
         return;
     }
     if (is_feeding) {
+        lcd_print(0, 0, " ", 1);
         is_feeding = 0;
         lcd_print(0,0, " ", 1);
     } else {
         is_feeding = 1;
         lcd_print(0,0, " -=* FEEDING *=-", 1);
         feeding_ts = tm_timestamp();
+        light_state = 1;
+        sch_update_pin(LIGHT_GPIO, light_state);
+        filter_state = 0;
+        sch_update_pin(FILTER_GPIO, filter_state);
+        co2_state = 0;
+        sch_update_pin(CO2_GPIO, co2_state);
     }
 }
 
@@ -85,15 +105,35 @@ void sch_toggle_maintenance() {
         return;
     }
     if (is_maintenance) {
+        lcd_print(0, 0, " ", 1);
         is_maintenance = 0;
     } else {
         is_maintenance = 1;
+        lcd_print(0, 0, "* MAINTENANCE * ", 1);
         maintenance_ts = tm_timestamp();
+        light_state = 1;
+        sch_update_pin(LIGHT_GPIO, light_state);
+        filter_state = 0;
+        sch_update_pin(FILTER_GPIO, filter_state);
+        co2_state = 0;
+        sch_update_pin(CO2_GPIO, co2_state);
     }
 }
 
 void sch_update_maintenance() {
+    int elapsed_seconds = tm_timestamp() - maintenance_ts;
+    int remaining_seconds = MAINTENANCE_TIMEOUT - elapsed_seconds;
 
+    if (remaining_seconds <= 0) {
+        sch_toggle_maintenance();
+    }
+    
+    const int remaining_hours = remaining_seconds / (60 * 60);
+    const int remaining_min = (remaining_seconds - remaining_hours * 60 * 60) / 60;
+    const int remaining_sec = remaining_seconds % 60;
+    char remaining_str[32];
+    sprintf(remaining_str, "%02d:%02d:%02d", remaining_hours, remaining_min, remaining_sec);
+    lcd_print(0, 1, remaining_str, 0);
 }
 
 void sch_update_feeding() {
@@ -172,14 +212,6 @@ void sch_update(uint32_t deltaTime) {
     }
 
     tm_display();
-    /*
-    char date_str[32];
-    tm_time_str(date_str);
-    Serial.println(" ");
-    Serial.printf("[%s] light state: %d\n", date_str, light_state);
-    Serial.printf("[%s] CO2 state: %d\n", date_str, co2_state);
-    Serial.printf("[%s] filter state: %d\n", date_str, filter_state);
-    */
 }
 
 
