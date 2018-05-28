@@ -51,11 +51,7 @@ void tm_sync(uint32_t deltaTime) {
         sync_timestamp = ts_parse_response(json);
         timestamp = sync_timestamp;
         timestamp_base = millis() / 1000;
-
-        char time_str[32];
-        tm_date_str(time_str);
-        Serial.printf("Current time: %s\n", time_str);
-        // lcd_print(0, 0, "timestamp:",1);
+        tm_display();
     } else {
         Serial.printf("ERROR: cannot get time, http response code is: %d", httpCode);
     }
@@ -70,14 +66,12 @@ void tm_tick(uint32_t deltaTime) {
     }
 }
 
-void tm_date_str(char * str) {
-    time_t ts = timestamp;
+void tm_date_str(time_t ts, char * str) {
     struct tm * t = gmtime(&ts);
     sprintf(str, "%04d-%02d-%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
 }
 
-void tm_time_str(char * str) {
-    time_t ts = timestamp;
+void tm_time_str(time_t ts, char * str) {
     struct tm * t = gmtime(&ts);
     sprintf(str, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
 }
@@ -85,8 +79,8 @@ void tm_time_str(char * str) {
 void tm_display() {
     char date_str[32];
     char time_str[32];
-    tm_date_str(date_str);
-    tm_time_str(time_str);
+    tm_date_str(timestamp, date_str);
+    tm_time_str(timestamp, time_str);
     lcd_print(0, 0, date_str, 0);
     lcd_print(0, 1, time_str, 0);
 }

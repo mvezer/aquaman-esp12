@@ -22,12 +22,12 @@ const int FILTER_GPIO = 0;
 const unsigned long HOURS_SEC = 60*60;
 const unsigned long MINUTES_SEC = 60;
 
-const unsigned long LIGTH_LENGTH = 2
-;
+const unsigned long LIGTH_LENGTH = 2;
 const unsigned long CO2_LENGTH = 2;
 const unsigned long FILTER_LENGTH = 1;
 
 void sch_update_pin(int gpio, int state);
+void sch_update_display(unsigned long ts);
 
 schedule_item light[LIGTH_LENGTH] = {
     { { 7, 0, 0 }, 0, 1 },
@@ -128,12 +128,7 @@ void sch_update_maintenance() {
         sch_toggle_maintenance();
     }
     
-    const int remaining_hours = remaining_seconds / (60 * 60);
-    const int remaining_min = (remaining_seconds - remaining_hours * 60 * 60) / 60;
-    const int remaining_sec = remaining_seconds % 60;
-    char remaining_str[32];
-    sprintf(remaining_str, "%02d:%02d:%02d", remaining_hours, remaining_min, remaining_sec);
-    lcd_print(0, 1, remaining_str, 0);
+    sch_update_display(remaining_seconds);
 }
 
 void sch_update_feeding() {
@@ -143,13 +138,8 @@ void sch_update_feeding() {
     if (remaining_seconds <= 0) {
         sch_toggle_feeding();
     }
-    
-    const int remaining_hours = remaining_seconds / (60 * 60);
-    const int remaining_min = (remaining_seconds - remaining_hours * 60 * 60) / 60;
-    const int remaining_sec = remaining_seconds % 60;
-    char remaining_str[32];
-    sprintf(remaining_str, "%02d:%02d:%02d", remaining_hours, remaining_min, remaining_sec);
-    lcd_print(0, 1, remaining_str, 0);
+
+    sch_update_display(remaining_seconds);
 }
 
 void sch_update(uint32_t deltaTime) {
@@ -211,7 +201,17 @@ void sch_update(uint32_t deltaTime) {
         filter_state = new_filter_state;
     }
 
-    tm_display();
+    sch_update_display(tm_timestamp());
+}
+
+void sch_update_display(unsigned long ts) {
+    char remaining_str[32];
+    tm_time_str(ts, remaining_str);
+    lcd_print(0, 1, remaining_str, 0);
+
+    char active_channels[32];
+    sprintf(active_channels, "[%c%c%c]", filter_state ? 'F' : ' ', light_state ? 'L' : ' ', co2_state ? 'C' : ' ');
+    lcd_print(10, 1, active_channels, 0);
 }
 
 
